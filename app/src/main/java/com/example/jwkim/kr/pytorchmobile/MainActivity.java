@@ -11,7 +11,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    // test github commit
+
     // custom class 쓰기 위한 초기화 먼저
     com.example.jwkim.kr.pytorchmobile.Util_Common util_common = new com.example.jwkim.kr.pytorchmobile.Util_Common(MainActivity.this);
 
