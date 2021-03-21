@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">PytorchMobile</string>
+    <string name="tag">JWKim</string>
+    <string name="Press_SHOOT">SHOOT 버튼을 눌러 촬영하세요</string>
+    <string name="Press_PROCESS">PROCESS 버튼을 눌러 처리를 진행하세요</string>
+    <string name="Press_TOGGLE">TOGGLE 버튼을 눌러 전후를 비교하세요</string>
+    <string name="FileNotFound">File not found</string>
+</resources>
