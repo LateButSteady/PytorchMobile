@@ -110,8 +110,15 @@ public class SubActivity_Camera extends AppCompatActivity {
                             Toast.makeText(SubActivity_Camera.this, getString(R.string.Press_SHOOT), Toast.LENGTH_SHORT).show();
                             break;
                         }
+
+                        // path null이면 에러
+                        if (null == mCurrentPhotoPath) {
+                            Log.e(getString(R.string.tag), "File path = null");
+                            Toast.makeText(SubActivity_Camera.this, getString(R.string.Press_SHOOT), Toast.LENGTH_SHORT).show();
+                            break;
+                        }
                         // 사진 찍지 않거나 실패해서 file size = 0 이라면 에러
-                        if (0 == util_common.getFileSize(mCurrentPhotoPath)) {
+                        else if (0 == util_common.getFileSize(mCurrentPhotoPath)) {
                             Log.e(getString(R.string.tag), "File size = 0kB");
                             textView_msg.setText(getString(R.string.Press_SHOOT));
                             Toast.makeText(SubActivity_Camera.this, getString(R.string.Press_SHOOT), Toast.LENGTH_SHORT).show();

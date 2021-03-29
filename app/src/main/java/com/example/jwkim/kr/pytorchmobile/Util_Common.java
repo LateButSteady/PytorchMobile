@@ -1,13 +1,17 @@
 package com.example.jwkim.kr.pytorchmobile;
 
 import android.app.Activity;
+import android.content.ContentUris;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -87,6 +91,17 @@ public class Util_Common {
         System.runFinalization();   // 작업중 thread 모두 종료되면 그때 종료
         System.exit(0);     // 현재 activity 종료
     }
+
+
+    /*
+     * Exception 처리
+     */
+    public void fn_error(String msg) {
+        Log.e(activity.getString(R.string.tag), msg);
+        Toast.makeText(activity, msg, Toast.LENGTH_LONG).show();
+        activity.finish();
+    }
+
 
     /*
      * Exception 처리
@@ -246,4 +261,38 @@ public class Util_Common {
         return exifDegree;
     }
 
+
+    /*
+     * absolute path에서 URI 얻기
+     * 참고: https://crystalcube.co.kr/184
+     */
+    public Uri getUriFromPath(String filePath) {
+        Cursor cursor = activity.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, "_data = '" + filePath + "'", null, null);
+
+        cursor.moveToNext();
+        int id = cursor.getInt(cursor.getColumnIndex("_id"));
+        Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+
+        return uri;
+    }
+
+
+    /*
+     * URI에서 absolute path 얻기
+     * 참고: https://www.viralpatel.net/pick-image-from-galary-android-app/
+     */
+    public String getPathFromURI(@NonNull Uri uri) {
+
+        String[] filePathColumn = { MediaStore.Images.Media.DATA };
+        // Get the cursor
+        Cursor cursor = activity.getContentResolver().query(uri, filePathColumn, null, null, null);
+        // Move to first row
+        cursor.moveToFirst();
+
+        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+        String path = cursor.getString(columnIndex);
+        cursor.close();
+        return path;
+    }
 }

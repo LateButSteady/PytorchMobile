@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SubActivity_Gallery">
+    tools:context=".SubActivity_Test">
 
     <TextView
         android:id="@+id/text_title"
@@ -46,24 +46,10 @@
         android:layout_marginBottom="15dp"
         android:text="Still shot"
         android:textSize="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_video"
+        app:layout_constraintBottom_toTopOf="@+id/btn_gallery"
         app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
         app:layout_constraintStart_toStartOf="@+id/sdc_logo"
         app:layout_constraintTop_toBottomOf="@+id/text_title" />
-
-    <Button
-        android:id="@+id/btn_video"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
-        android:text="video"
-        android:textSize="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_gallery"
-        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_camera" />
 
     <Button
         android:id="@+id/btn_gallery"
@@ -73,11 +59,25 @@
         android:layout_marginBottom="15dp"
         android:text="gallery"
         android:textSize="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_test"
+        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
+        app:layout_constraintTop_toBottomOf="@+id/btn_camera" />
+
+    <Button
+        android:id="@+id/btn_test"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:layout_marginBottom="15dp"
+        android:text="test"
+        android:textSize="20dp"
         app:layout_constraintBottom_toTopOf="@+id/btn_exit"
         app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_video" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_gallery" />
 
     <Button
         android:id="@+id/btn_exit"
@@ -91,6 +91,6 @@
         app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_gallery" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_test" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,98 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
+    android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/imageView_Infer"
+        android:id="@+id/imgView_stillshot_org2"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="5dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_Infer"
-        app:layout_constraintDimensionRatio="1"
+        android:background="#BAFFAA"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/textView_msg2"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/text_InferResult"
+    <ImageView
+        android:id="@+id/imgView_stillshot_processed2"
         android:layout_width="0dp"
-        android:layout_height="35dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="5dp"
-        android:text="Your Inference Here"
-        app:layout_constraintBottom_toTopOf="@id/btn_Run"
+        android:layout_height="0dp"
+        android:layout_marginBottom="15dp"
+        android:background="#B9FFFF"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/textView_msg2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_Infer" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/btn_Infer"
+        android:id="@+id/btn_pick"
         android:layout_width="0dp"
-        android:layout_height="60dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="5dp"
-        android:text="Infer"
-        app:layout_constraintBottom_toTopOf="@+id/text_InferResult"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="30dp"
+        android:text="CHOOSE"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_process2"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView_Infer" />
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg2" />
 
     <Button
-        android:id="@+id/btn_Run"
+        android:id="@+id/btn_process2"
         android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="5dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="30dp"
+        android:text="PROCESS"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btn_toggle2"
+        app:layout_constraintStart_toEndOf="@+id/btn_pick"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg2" />
+
+    <Button
+        android:id="@+id/btn_toggle2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="10dp"
         android:layout_marginEnd="30dp"
-        android:layout_marginBottom="5dp"
-        android:text="Run"
-        app:layout_constraintBottom_toTopOf="@+id/text_RunResult"
+        android:layout_marginBottom="30dp"
+        android:text="TOGGLE"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.8"
-        app:layout_constraintStart_toEndOf="@id/btn_Move"
-        app:layout_constraintTop_toBottomOf="@+id/text_InferResult"
+        app:layout_constraintStart_toEndOf="@+id/btn_process2"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg2"
         app:layout_constraintVertical_bias="0.0" />
 
     <TextView
-        android:id="@+id/text_RunResult"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="15dp"
-        android:text="Java practice result"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/textView_msg2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="30dp"
+        android:text="@string/Press_SHOOT"
+        android:textSize="15dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_pick"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_Run" />
-
-    <Button
-        android:id="@+id/btn_Move"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="15dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="15dp"
-        android:layout_marginBottom="5dp"
-        android:text="back"
-        app:layout_constraintBottom_toTopOf="@+id/text_RunResult"
-        app:layout_constraintEnd_toStartOf="@+id/btn_Run"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_InferResult" />
+        app:layout_constraintTop_toBottomOf="@+id/imgView_stillshot_org2" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

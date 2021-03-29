@@ -1,251 +1,191 @@
 package com.example.jwkim.kr.pytorchmobile;
 
-import android.content.Context;
+import android.Manifest;
 import android.content.Intent;
-import android.content.res.AssetManager;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Image;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
-import org.pytorch.IValue;
 import org.pytorch.Module;
-import org.pytorch.Tensor;
-import org.pytorch.torchvision.TensorImageUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-// 참고 https://www.youtube.com/watch?v=5Lxuu16_28o&feature=youtu.be
 
 public class SubActivity_Gallery extends AppCompatActivity {
 
-    private Bitmap bitmap = null;
+    final int PICK_IMAGE_REQUEST = 1000;
+    ImageView imgView_stillshot_org2 = null;
+    ImageView imgView_stillshot_processed2 = null;
+    TextView textView_msg2 = null;
+    String mCurrentPhotoPath = null;
+    Button btn_pick = null;
+    Button btn_process2 = null;
+    Button btn_toggle2 = null;
+
+    private int exifDegree; // output Bitmap rotation 각
+    private Bitmap inputBitmap = null;
+    private Bitmap outputBitmap_tmp = null;
+    private Bitmap outputBitmap = null;
     private Module module = null;
-    //----- outputTensor 띄우기 위함
-    ImageView imgView_stillshot_processed;
-    ImageView imgView_stillshot_org;
-    //-----
+
+    private View.OnClickListener clickListener;
+    com.example.jwkim.kr.pytorchmobile.Util_Common  util_common  = new com.example.jwkim.kr.pytorchmobile.Util_Common(SubActivity_Gallery.this);
+    com.example.jwkim.kr.pytorchmobile.Util_CNN     util_cnn     = new com.example.jwkim.kr.pytorchmobile.Util_CNN(SubActivity_Gallery.this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub_gallery);
 
-        imgView_stillshot_processed = findViewById(R.id.imgView_stillshot_processed);
-        imgView_stillshot_org = findViewById(R.id.imgView_stillshot_org);
+        imgView_stillshot_org2 = findViewById(R.id.imgView_stillshot_org2);
+        imgView_stillshot_processed2 = findViewById(R.id.imgView_stillshot_processed2);
 
-        try {
-            bitmap = BitmapFactory.decodeStream(getAssets().open("macaw.JPG")); // 대소문자 중요
-            // loading serialized torchscript module from packaged into app android asset model.pt,
-            // app/src/model/assets/model.pt
-            module = Module.load(assetFilePath(SubActivity_Gallery.this, "mobilenet-v2.pt"));
+        btn_pick = findViewById(R.id.btn_pick);
+        btn_process2 = findViewById(R.id.btn_process2);
+        btn_toggle2 = findViewById(R.id.btn_toggle2);
+        textView_msg2 = findViewById(R.id.textView_msg2);
 
-        } catch (IOException e) {
-            Log.e(getString(R.string.tag), "Error reading assets", e);
-            finish();
+        // 권한 설정
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                Log.d(getString(R.string.tag), "권한 설정 완료");
+            } else {
+                Log.d(getString(R.string.tag), "권한 설정 요청");
+                ActivityCompat.requestPermissions(SubActivity_Gallery.this, new String[]{
+                        Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
         }
 
-        // showing image on UI
-        ImageView imageView_Infer = findViewById(R.id.imageView_Infer);
 
-        imageView_Infer.setImageBitmap(bitmap);
-
-        // infer 버튼
-        final Button button_infer = (Button) findViewById(R.id.btn_Infer);
-        button_infer.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v) {
-
-                final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(bitmap,
-                        TensorImageUtils.TORCHVISION_NORM_MEAN_RGB, TensorImageUtils.TORCHVISION_NORM_STD_RGB);
-
-                // running the model
-                final Tensor outputTensor = module.forward(IValue.from(inputTensor)).toTensor();
-
-                // output tensor를 bitmap으로 convert
-                // 참고: https://github.com/pytorch/pytorch/issues/30655
-                // 음...? 바로 밑에서 floatarray로 바꾸네
-
-                // getting tensor content as java array of floats
-                final float[] scores = outputTensor.getDataAsFloatArray();
-                /*
-                final long[] output_shape = outputTensor.shape();   // 1, 3, 32, 32
-
-                ArrayList<Float> arraylist = new ArrayList<Float>();
-                for (int i = 0; i< scores.length ; i++) arraylist.add(scores[i]);
-
-
-                int length = scores.length;
-                Bitmap outBitmap = arrayFloatToBitmap(arraylist, (int) output_shape[3], (int) output_shape[2]);
-
-                imgView_stillshot_processed.setImageBitmap(outBitmap);
-                imgView_stillshot_processed.setVisibility(View.VISIBLE);
-                imgView_stillshot_org.setVisibility(View.INVISIBLE);
-                */
-
-                // mobilenet-v2 classification일때
-                // searching for the index with maximum score
-                float maxScore = -Float.MAX_VALUE;
-                int maxScoreIdx = -1;
-                for (int i = 0; i < scores.length; i++){
-                    if(scores[i] > maxScore){
-                        maxScore = scores[i];
-                        maxScoreIdx = i;
-                    }
-                }
-
-                String className = ImageNetClasses.IMAGENET_CLASSES[maxScoreIdx];
-
-                //showing className on UI
-                TextView textView = findViewById(R.id.text_InferResult);
-                textView.setText("Classification result : " + className);
-
-            }
-        });
-
-
-        // myFunction 실행 (java 공부하면서 output 여기로 뿌릴 수 있음)
-        final Button button_run = findViewById(R.id.btn_Run);
-        button_run.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v) {
-                try {
-                    myFunction();
-                } catch (IOException e) {
-                    String strResult = "[ERROR] Failed to myFunction";
-                    ShowResult(strResult);
-                    e.printStackTrace();
-                }
-            }
-        });
-
-
-        // 초기화면 넘어가기
-        final Button btn_move = (Button) findViewById(R.id.btn_Move);
-        btn_move.setOnClickListener(new View.OnClickListener() {
+        // 여러개 버튼 처리
+        clickListener = new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(SubActivity_Gallery.this, MainActivity.class);
-                startActivity(intent);  // activity 이동.
-            }
-        });
-    }
+                switch (v.getId()) {
+                    case R.id.btn_pick:
+                        loadImagefromGallery(v);
+                        break;
+
+                    case R.id.btn_process2:
+                        // process 먼저 실행
+                        //   - .pt 파일 로드
+                        //   - 입력영상 불러오기
+                        //   - 처리하기
+                        //   - 결과영상 저장
+                        //   - 입력영상, 결과영상 경로 intent bundle에 싣기
+
+                        // 먼저 imageView 비었으면 에러
+                        if (null == imgView_stillshot_org2.getDrawable()) {
+                            Log.e(getString(R.string.tag), "imgView is Empty");
+                            textView_msg2.setText(getString(R.string.Press_SHOOT));
+                            Toast.makeText(SubActivity_Gallery.this, getString(R.string.Press_SHOOT), Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+
+                        // path null이면 에러
+                        if (null == mCurrentPhotoPath) {
+                            Log.e(getString(R.string.tag), "File path = null");
+                            Toast.makeText(SubActivity_Gallery.this, "File path = null", Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+                        // 사진 찍지 않거나 실패해서 file size = 0 이라면 에러
+                        else if (0 == util_common.getFileSize(mCurrentPhotoPath)) {
+                            Log.e(getString(R.string.tag), "File size = 0kB");
+                            textView_msg2.setText(getString(R.string.Press_SHOOT));
+                            Toast.makeText(SubActivity_Gallery.this, getString(R.string.Press_SHOOT), Toast.LENGTH_SHORT).show();
+                            break;
+                        }
+
+                        // load model
+                        module = util_cnn.loadModel("cnn_TorchScript.pt");
+
+                        // input bitmap
+                        inputBitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+
+                        // Model run
+                        outputBitmap_tmp = util_cnn.runModel(module, inputBitmap);
+
+                        // rotate시켜서 output Bitmap 똑바로 세우기
+                        exifDegree = util_common.getRotatationDegreeFromExif(mCurrentPhotoPath);
+                        outputBitmap = util_common.rotate(outputBitmap_tmp, exifDegree);
+
+                        // 결과 영상 저장
 
 
 
 
+                        // 결과 영상 띄우기
+                        imgView_stillshot_processed2.setImageBitmap(outputBitmap);
+                        imgView_stillshot_processed2.setVisibility(View.VISIBLE);
+                        imgView_stillshot_org2.setVisibility(View.INVISIBLE);
 
-    public static String assetFilePath(Context context, String assetName) throws IOException {
-        File file = new File(context.getFilesDir(), assetName);
-        if (file.exists() && file.length() >0){
-            return file.getAbsolutePath();
-        }
+                        textView_msg2.setText(getString(R.string.Press_TOGGLE));
 
-        try (InputStream is = context.getAssets().open(assetName)){
-            try (OutputStream os = new FileOutputStream(file)){
-                byte[] buffer = new byte[4 * 1024];
-                int read;
-                while ((read = is.read(buffer)) != -1) {
-                    os.write(buffer, 0, read);
+                        break;
+
+                    case R.id.btn_toggle2:
+                        util_common.toggle_imageViews(imgView_stillshot_org2, imgView_stillshot_processed2);
+                        break;
                 }
-                os.flush();
             }
-            return file.getAbsolutePath();
-        }
+        };
+
+        // 이걸 넣어줘야 listen 시작함
+        btn_pick.setOnClickListener(clickListener);
+        btn_process2.setOnClickListener(clickListener);
+        btn_toggle2.setOnClickListener(clickListener);
     }
 
 
 
+    /*
+     * 갤러리에서 영상 선택하기
+     * 참고: https://blog.naver.com/cosmosjs/220940841567
+     */
+    public void loadImagefromGallery(View view) {
+        //Intent 생성
+        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
-
-
-    /////// 여기가 myFunction 내용 ////////
-    public void myFunction() throws IOException {
-        String strResult = null;
-        String strPathFile = "sample.txt";
-        // ------ <body ------
-
-
-
-
-
-
-
-
-        // txt 로딩해서 내용 띄우기
-        strResult = Func_LoadingTxt(strPathFile);
-        // ------ /body> ------
-        ShowResult(strResult);
+        intent.setType("image/*"); //이미지만 보이게
+        //Intent 시작 - 갤러리앱을 열어서 원하는 이미지를 선택할 수 있다.
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
-    ///////////////////////////////////////
 
-    public String Func_LoadingTxt(String strPathFile) throws IOException {
-        String line = null;
-        String strFileContent = null;
-        InputStream is = null;
-        byte buf[] = new byte[1024];
-
-        //파일읽기 참고: https://recipes4dev.tistory.com/125
-        AssetManager am = getResources().getAssets();
-
+    //이미지 선택작업을 후의 결과 처리
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         try {
-            is = am.open(strPathFile);
+            //이미지를 하나 골랐을때
+            if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && null != data) {
+                
+                //data에서 절대경로로 이미지를 가져옴
+                Uri uri = data.getData();
+                mCurrentPhotoPath = util_common.getPathFromURI(uri);
 
-            if (is.read(buf) > 0){
-                strFileContent = new String(buf);
+                util_common.dispImgFile(imgView_stillshot_org2, mCurrentPhotoPath);
+
+            } else {
+                Toast.makeText(this, "취소 되었습니다.", Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
+            Toast.makeText(this, "Oops! 로딩에 오류가 있습니다.", Toast.LENGTH_LONG).show();
             e.printStackTrace();
-            strFileContent = "[ERROR] Failed to load " + strPathFile;
         }
 
-        return strFileContent;
     }
 
-
-    // run textbox에 결과 string 출력
-    // 이제 java 배울 환경 만들었음
-    void ShowResult(String strResult){
-        TextView textView = findViewById(R.id.text_RunResult);
-        textView.setText(strResult);
-    }
-
-
-    //
-    private Bitmap arrayFloatToBitmap(List<Float> floatArray, int width, int height){
-
-        byte alpha = (byte) 255 ;
-
-        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) ;
-
-        ByteBuffer byteBuffer = ByteBuffer.allocate(width*height*4*3) ;
-
-        float Maximum = Collections.max(floatArray);
-        float minmum = Collections.min(floatArray);
-        float delta = Maximum - minmum ;
-
-        int i = 0 ;
-        for (float value : floatArray){
-            byte temValue = (byte) ((byte) ((((value-minmum)/delta)*255)));
-            byteBuffer.put(4*i, temValue) ;
-            byteBuffer.put(4*i+1, temValue) ;
-            byteBuffer.put(4*i+2, temValue) ;
-            byteBuffer.put(4*i+3, alpha) ;
-            i++ ;
-        }
-        bmp.copyPixelsFromBuffer(byteBuffer) ;
-        return bmp ;
-    }
 }
