@@ -84,25 +84,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             default:
                 break;
-
-            /*
-            case R.id.btn_camera:
-                intent = new Intent(MainActivity.this, com.example.jwkim.kr.pytorchmobile.SubActivity_Camera.class);
-                startActivity(intent);
-                break;
-            case R.id.btn_test:
-                intent = new Intent(MainActivity.this, SubActivity_Test.class);
-                startActivity(intent);
-                break;
-            case R.id.btn_gallery:
-                intent = new Intent( MainActivity.this, SubActivity_Gallery.class);
-                startActivity(intent);
-                break;
-            case R.id.btn_exit:
-                util_common.exitBtn();
-                break;
-
-             */
         }
     }
 
