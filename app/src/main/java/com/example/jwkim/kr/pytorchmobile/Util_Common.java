@@ -2,6 +2,7 @@ package com.example.jwkim.kr.pytorchmobile;
 
 import android.app.Activity;
 import android.content.ContentUris;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -22,8 +23,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class Util_Common {
     private long time_BackBtnPressed = 0;
@@ -37,10 +42,11 @@ public class Util_Common {
         this.activity = mAct;
     }
 
+
     /*
      * back 버튼 짧게 두번 누르면 App 종료
      * 참고: https://dsnight.tistory.com/14
-    */
+     */
     public void exitBackBtn(long interval) {
         // back 버튼을 긴 interval로 누르면 toast로 먼저 안내
         if (System.currentTimeMillis() > time_BackBtnPressed + interval) {
@@ -57,11 +63,12 @@ public class Util_Common {
         }
     }
 
+
     /*
      * MainActivity 종료버튼 누르면 Alert Dialog
      * Yes: 앱 종료, No: Dialog 취소
      */
-    public void exitBtn() {
+    public void exitBtnAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setMessage("종료 하시겠습니까?");
         builder.setTitle("종료 알림창")
@@ -83,6 +90,7 @@ public class Util_Common {
         alert.show();
     }
 
+
     /*
      * App 종료
      */
@@ -94,31 +102,93 @@ public class Util_Common {
 
 
     /*
-     * Exception 처리
+     * IOexception
      */
-    public void fn_error(String msg) {
-        Log.e(activity.getString(R.string.tag), msg);
-        Toast.makeText(activity, msg, Toast.LENGTH_LONG).show();
-        activity.finish();
-    }
-
-
-    /*
-     * Exception 처리
-     */
-    public void fn_exception(@NonNull Exception e, String msg) {
-        Log.e(activity.getString(R.string.tag), msg);
+    public void fn_IOexception(IOException e, String msg, String tag) {
+        Log.e(tag, msg, e);
         e.printStackTrace();
         activity.finish();
     }
 
     /*
-     * IOException 처리
+     * Exception
      */
-    public void fn_IOexception(@NonNull IOException e, String msg) {
-        Log.e(activity.getString(R.string.tag), msg);
+    public void fn_Exception(Exception e, String msg, String tag) {
+        Log.e(tag, msg, e);
         e.printStackTrace();
         activity.finish();
+    }
+
+    /*
+     * Routine error
+     */
+    public void fn_error(String msg, String tag) {
+        Log.e(tag, "Error reading file");
+        Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show();
+    }
+
+
+    /*
+     * asset file 불러오기
+     */
+    public static @NonNull String assetFilePath(@NonNull Context context, String assetName) throws IOException {
+        File file = new File(context.getFilesDir(), assetName);
+        if (file.exists() && file.length() >0){
+            return file.getAbsolutePath();
+        }
+
+        try (InputStream is = context.getAssets().open(assetName)){
+            try (OutputStream os = new FileOutputStream(file)){
+                byte[] buffer = new byte[4 * 1024];
+                int read;
+                while ((read = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, read);
+                }
+                os.flush();
+            }
+            return file.getAbsolutePath();
+        }
+    }
+
+
+
+
+
+
+    /*
+     * image 파일 Bitmap으로 불러오기
+     */
+    public Bitmap loadFileToBitmap(String pathFile) {
+        Bitmap bitmap = null;
+
+        try {
+            File file = new File(pathFile);
+
+            if (Build.VERSION.SDK_INT >= 29) {
+                // android API29에서는 getBitmap deprecated되었음. -> 버전별로 나눠서 처리
+                ImageDecoder.Source source = ImageDecoder.createSource(activity.getContentResolver(), Uri.fromFile(file));
+                bitmap = ImageDecoder.decodeBitmap(source); // API29 이상 버전에서 getBitmap 대체하는 줄
+            } else {
+                bitmap = MediaStore.Images.Media.getBitmap(activity.getContentResolver(), Uri.fromFile(file));
+            }
+        } catch (IOException e){
+            fn_IOexception(e, "Error reading file", activity.getString(R.string.tag));
+        }
+        return bitmap;
+    }
+
+
+    /*
+     * Bitmap을 image 파일로 저장
+     */
+    public void saveBitmapToFile(@NonNull Bitmap bmp, @NonNull String path) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.PNG, 100, bytes);
+        File f = new File(path);
+        f.createNewFile();
+        FileOutputStream fo = new FileOutputStream(f);
+        fo.write(bytes.toByteArray());
+        fo.close();
     }
 
 
@@ -136,77 +206,28 @@ public class Util_Common {
 
 
     /*
-     * ImageView에 영상 file 띄우기
-     * pathImg는 jpg여야 한다?
+     * 영상 파일의 exif에서 방향 정보를 얻기
+     * 참고: https://duckssi.tistory.com/11?category=328338
      */
-    //public void dispImgFile(ImageView imageView, String pathImg, boolean flagRotate) {
-    public void dispImgFile(ImageView imageView, String pathImg) {
+    public int getRotatationDegreeFromExif(String pathImg) {
+        ExifInterface exif = null;
+        int exifDegree = 0;
+        int exifOrientation;
 
-        // input 검사
-        if (pathImg == null) {
-            Log.e(activity.getString(R.string.tag), "Image path is null");
-            Toast.makeText(activity, "Image path is null", Toast.LENGTH_SHORT).show();
+        try {
+            // jpg 파일에서만 exif 구할 수 있음
+            exif = new ExifInterface(pathImg);
+        } catch (IOException e) {
+            fn_IOexception(e, "Failed to get exif", activity.getString(R.string.tag));
         }
-        if (imageView == null) {
-            Log.e(activity.getString(R.string.tag), "imageView is null");
-            Toast.makeText(activity, "imageView is null", Toast.LENGTH_SHORT).show();
+
+        if (exif != null) {
+            exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            exifDegree = exifOrientationToDegree(exifOrientation);
         }
 
-        // 불러와서 imgView에 띄우기
-        File file = new File(pathImg);
-        if (file.exists()) {
-            Bitmap bitmap_img = null;
-
-            // SDK 버전따라 bitmap 불러오기
-            if (Build.VERSION.SDK_INT >= 29) {
-                ImageDecoder.Source source = ImageDecoder.createSource(activity.getContentResolver(), Uri.fromFile(file));
-                try {
-                    bitmap_img = ImageDecoder.decodeBitmap(source);
-                } catch (IOException e) {
-                    fn_IOexception(e, activity.getString(R.string.FileNotFound));
-                }
-            } else {
-                try {
-                    bitmap_img = MediaStore.Images.Media.getBitmap(activity.getContentResolver(), Uri.fromFile(file));
-                } catch (IOException e) {
-                    fn_IOexception(e, activity.getString(R.string.FileNotFound));
-                }
-            }
-
-            // imageView에 bitmap 띄우기. 이건 rotation 필요 없음
-            imageView.setImageBitmap(bitmap_img);
-        } else {
-            Log.e(activity.getString(R.string.tag), activity.getString(R.string.FileNotFound));
-            Toast.makeText(activity, activity.getString(R.string.FileNotFound), Toast.LENGTH_SHORT).show();
-        }
+        return exifDegree;
     }
-
-    /*
-     * 두개 imageView를 교차해서 보여주기
-     * 사이즈와 위치가 같도록 배치되어야 toggle 효과를 볼 수 있음
-     */
-    public void toggle_imageViews(@NonNull ImageView imgView1,@NonNull ImageView imgView2) {
-        // Before가 떴을때
-        if (View.VISIBLE == imgView1.getVisibility() &&
-                View.INVISIBLE == imgView2.getVisibility()) {
-            imgView1.setVisibility(View.INVISIBLE);
-            imgView2.setVisibility(View.VISIBLE);
-        }
-        // After가 떴을때
-        else if (View.INVISIBLE == imgView1.getVisibility() &&
-                View.VISIBLE == imgView2.getVisibility()) {
-            imgView1.setVisibility(View.VISIBLE);
-            imgView2.setVisibility(View.INVISIBLE);
-        }
-        // 그 외에는 메시지 띄워서 알려주기 (toggle 효과 없음)
-        else {
-            Toast.makeText(activity, "Both imgView are already ON or OFF", Toast.LENGTH_SHORT).show();
-            Log.e(activity.getString(R.string.tag), "Failed: Toggle: Both imgView are already ON or OFF");
-        }
-    }
-
-
-
 
 
     /*
@@ -228,6 +249,7 @@ public class Util_Common {
         return 0;
     }
 
+
     /*
      * Bitmap 회전
      */
@@ -239,42 +261,50 @@ public class Util_Common {
 
 
     /*
-     * 영상 파일의 exif에서 방향 정보를 얻기
-     * 참고: https://duckssi.tistory.com/11?category=328338
+     * imageView toggle
      */
-    public int getRotatationDegreeFromExif(String pathImg) {
-        ExifInterface exif = null;
-        int exifDegree = 0;
-        int exifOrientation;
+    public void toggle_imageViews(@NonNull ImageView imgView1,@NonNull ImageView imgView2) {
+        // 먼저 imageView가 null인지 체크
+        //if (checkEmptyImageView(imgView1)) {
+        //    fn_error("ImageView of origin image is empty", activity.getString(R.string.tag));
+        //}
 
-        try {
-            exif = new ExifInterface(pathImg);
-        } catch (IOException e) {
-            fn_IOexception(e, "Failed to get exif");
+        // 현재 상태 체크
+        // after 출력 상태일때
+        if (View.VISIBLE == imgView2.getVisibility() &&
+                View.INVISIBLE == imgView1.getVisibility()) {
+
+            imgView2.setVisibility(View.INVISIBLE);
+            imgView1.setVisibility(View.VISIBLE);
         }
-
-        if (exif != null) {
-            exifOrientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            exifDegree = exifOrientationToDegree(exifOrientation);
+        // before 출력 상태일때
+        else if (View.INVISIBLE == imgView2.getVisibility() &&
+                View.VISIBLE == imgView1.getVisibility()) {
+            imgView2.setVisibility(View.VISIBLE);
+            imgView1.setVisibility(View.INVISIBLE);
         }
-
-        return exifDegree;
+        // 비정상
+        else {
+            Log.e(activity.getString(R.string.tag), "Both imgView are already ON or OFF");
+            Toast.makeText(activity, "Both imgView are already ON or OFF", Toast.LENGTH_SHORT).show();
+        }
     }
 
 
     /*
-     * absolute path에서 URI 얻기
-     * 참고: https://crystalcube.co.kr/184
+     * ImageView 비었는지 체크 (비었으면 Toast)
      */
-    public Uri getUriFromPath(String filePath) {
-        Cursor cursor = activity.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, "_data = '" + filePath + "'", null, null);
-
-        cursor.moveToNext();
-        int id = cursor.getInt(cursor.getColumnIndex("_id"));
-        Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-
-        return uri;
+    public boolean checkEmptyImageView(@NonNull ImageView imageView) {
+        // 먼저 imageView가 null인지 체크
+        boolean bRtnValue = true;
+        imageView.getDrawable();
+        if (null == imageView.getDrawable()) {
+            Log.e(activity.getString(R.string.tag), "imageView is empty");
+            bRtnValue = true;
+        } else {
+            bRtnValue = false;
+        }
+        return bRtnValue;
     }
 
 
@@ -294,5 +324,101 @@ public class Util_Common {
         String path = cursor.getString(columnIndex);
         cursor.close();
         return path;
+    }
+
+
+    /*
+     * ImageView에 영상 file 띄우기
+     * pathImg는 jpg여야 한다?
+     */
+    //public void dispImgFile(ImageView imageView, String pathImg, boolean flagRotate) {
+    public void dispImgFile(ImageView imageView, String pathImg) {
+        Bitmap bitmap = null;
+
+        // input 검사
+        if (pathImg == null) {
+            Log.e(activity.getString(R.string.tag), "Image path is null");
+            Toast.makeText(activity, "Image path is null", Toast.LENGTH_SHORT).show();
+        }
+        if (imageView == null) {
+            Log.e(activity.getString(R.string.tag), "imageView is null");
+            Toast.makeText(activity, "imageView is null", Toast.LENGTH_SHORT).show();
+        }
+
+        // 불러와서 imgView에 띄우기
+        File file = new File(pathImg);
+        if (file.exists()) {
+
+            // SDK 버전따라 bitmap 불러오기
+            if (Build.VERSION.SDK_INT >= 29) {
+                ImageDecoder.Source source = ImageDecoder.createSource(activity.getContentResolver(), Uri.fromFile(file));
+                try {
+                    bitmap = ImageDecoder.decodeBitmap(source);
+                } catch (IOException e) {
+                    fn_IOexception(e, activity.getString(R.string.FileNotFound), activity.getString(R.string.tag));
+                }
+            } else {
+                try {
+                    bitmap = MediaStore.Images.Media.getBitmap(activity.getContentResolver(), Uri.fromFile(file));
+                } catch (IOException e) {
+                    fn_IOexception(e, activity.getString(R.string.FileNotFound), activity.getString(R.string.tag));
+                }
+            }
+
+            // imageView에 bitmap 띄우기. 이건 rotation 필요 없음
+            imageView.setImageBitmap(bitmap);
+        } else {
+            Log.e(activity.getString(R.string.tag), activity.getString(R.string.FileNotFound));
+            Toast.makeText(activity, activity.getString(R.string.FileNotFound), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    /*
+     * 파일 회전해서 imageView에 띄우기
+     */
+    public void rotateImageView(@NonNull ImageView imgView, @NonNull String path, float angle) {
+        // path에 파일 있는지부터 체크
+        File file = new File(path);
+        Bitmap bitmap = null;
+        //  영상 파일 새로 불러와서 setImageBitmap
+        if (file.exists()) bitmap = loadFileToBitmap(path);
+        else Log.e(activity.getString(R.string.tag),"File not found");
+        if (null != bitmap) imgView.setImageBitmap(rotate(bitmap, angle));
+    }
+
+
+    /*
+     * 파일 확장자 가져오기
+     */
+    public String getExtension(@NonNull String filePath) {
+        String fileExtension = filePath.substring(filePath.lastIndexOf(".")+1,filePath.length());
+        return fileExtension;
+    }
+
+
+    /*
+     * 확장자 빼고 파일명에 더하기
+     */
+    public String addFileName(@NonNull String orgFileName, @NonNull String strAdd) {
+        String Extension = orgFileName.substring(orgFileName.lastIndexOf(".")+1, orgFileName.length());
+        String orgFileNameNoExtension = orgFileName.substring(0, orgFileName.lastIndexOf("."));
+        return orgFileNameNoExtension + strAdd + "." + Extension;
+    }
+
+
+    /*
+     * absolute path에서 URI 얻기
+     * 참고: https://crystalcube.co.kr/184
+     */
+    public Uri getUriFromPath(String filePath) {
+        Cursor cursor = activity.getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, "_data = '" + filePath + "'", null, null);
+
+        cursor.moveToNext();
+        int id = cursor.getInt(cursor.getColumnIndex("_id"));
+        Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+
+        return uri;
     }
 }

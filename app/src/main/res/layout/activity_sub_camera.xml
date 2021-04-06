@@ -2,17 +2,71 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/btn_shoot"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="SHOOT"
+        app:layout_constraintBottom_toTopOf="@+id/btn_process"
+        app:layout_constraintEnd_toStartOf="@+id/space_center"
+        app:layout_constraintStart_toEndOf="@+id/space_left"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_process"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:text="PROCESS"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/space_center"
+        app:layout_constraintStart_toEndOf="@+id/space_left"
+        app:layout_constraintTop_toBottomOf="@+id/btn_shoot"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_toggle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="TOGGLE"
+        app:layout_constraintBottom_toTopOf="@+id/btn_rotate"
+        app:layout_constraintEnd_toStartOf="@+id/space_right"
+        app:layout_constraintStart_toEndOf="@+id/space_center"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_rotate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:text="ROTATE"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/space_right"
+        app:layout_constraintStart_toEndOf="@+id/space_center"
+        app:layout_constraintTop_toBottomOf="@+id/btn_toggle"
+        app:layout_constraintVertical_bias="1.0"
+        app:layout_constraintWidth_percent="0.4" />
 
     <ImageView
         android:id="@+id/imgView_stillshot_org"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#BAFFAA"
+        android:layout_marginBottom="10dp"
+        android:background="#000000"
         android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@+id/textView_msg"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -20,69 +74,61 @@
         android:id="@+id/imgView_stillshot_processed"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="15dp"
-        android:background="#B9FFFF"
+        android:background="#000000"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/textView_msg"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/btn_shoot"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="30dp"
-        android:text="SHOOT"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_process"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg" />
-
-    <Button
-        android:id="@+id/btn_process"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="30dp"
-        android:text="PROCESS"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_toggle"
-        app:layout_constraintStart_toEndOf="@+id/btn_shoot"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg" />
-
-    <Button
-        android:id="@+id/btn_toggle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="30dp"
-        android:text="TOGGLE"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_process"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintBottom_toBottomOf="@+id/imgView_stillshot_org"
+        app:layout_constraintEnd_toEndOf="@+id/imgView_stillshot_org"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/imgView_stillshot_org"
+        app:layout_constraintTop_toTopOf="@+id/imgView_stillshot_org"
+        app:layout_constraintVertical_bias="1.0" />
 
     <TextView
         android:id="@+id/textView_msg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginEnd="30dp"
-        android:text="@string/Press_SHOOT"
+        android:layout_marginTop="10dp"
+        android:text="@string/press_SHOOT"
         android:textSize="15dp"
         app:layout_constraintBottom_toTopOf="@+id/btn_shoot"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imgView_stillshot_org" />
+
+    <Space
+        android:id="@+id/space_center"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_toggle"
+        app:layout_constraintStart_toEndOf="@id/btn_shoot"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg"
+        app:layout_constraintWidth_percent="0.06" />
+
+    <Space
+        android:id="@+id/space_left"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_shoot"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg"
+        app:layout_constraintWidth_percent="0.07" />
+
+    <Space
+        android:id="@+id/space_right"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_toggle"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg"
+        app:layout_constraintWidth_percent="0.07" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

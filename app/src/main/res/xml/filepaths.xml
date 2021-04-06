@@ -3,4 +3,5 @@
     <external-path
         name="my_images"
         path="Android/data/com.example.jwkim.kr.pytorchmobile/files/Pictures" />
+    <root-path name="root" path="." />
 </paths>

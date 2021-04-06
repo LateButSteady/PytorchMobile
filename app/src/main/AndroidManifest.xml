@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.jwkim.kr.pytorchmobile">
 
+    <!-- camera2 API를 사용하여 camera 기능 추가 -->
+    <!-- intent로 불러올 기본 카메라 feature 설정 -->
+    <uses-feature android:name="android.hardware.camera2.full" />
+    <uses-feature android:name="android.permission.CAMERA" />
+    <!-- 사진을 외부 저장소(SD card)에 저장할 수 있도록 외부 저장소 write permission설정 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
@@ -11,7 +16,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.PytorchMobile.Day">
+        android:theme="@style/Theme.PytorchMobile.Day"
+        android:requestLegacyExternalStorage="true">
+        <!--API29부터 파일 쓸때 일어나는 open failed: EACCES (Permission denied) 에러 해결하기 위해 application tag 안에 아래 코드 추가-->
+        <!--storage android:requestLegacyExternalStorage="true" -->
         <activity android:name=".MainActivity"
             android:screenOrientation="portrait">
             <intent-filter>

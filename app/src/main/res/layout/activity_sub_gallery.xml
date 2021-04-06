@@ -6,14 +6,67 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <Button
+        android:id="@+id/btn_choose"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="CHOOSE"
+        app:layout_constraintBottom_toTopOf="@+id/btn_process2"
+        app:layout_constraintEnd_toStartOf="@+id/space_center2"
+        app:layout_constraintStart_toEndOf="@+id/space_left2"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg2"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_process2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:text="PROCESS"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/space_center2"
+        app:layout_constraintStart_toEndOf="@+id/space_left2"
+        app:layout_constraintTop_toBottomOf="@+id/btn_choose"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_toggle2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="TOGGLE"
+        app:layout_constraintBottom_toTopOf="@+id/btn_rotate2"
+        app:layout_constraintEnd_toStartOf="@+id/space_right2"
+        app:layout_constraintStart_toEndOf="@+id/space_center2"
+        app:layout_constraintTop_toBottomOf="@+id/textView_msg2"
+        app:layout_constraintWidth_percent="0.4" />
+
+    <Button
+        android:id="@+id/btn_rotate2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        android:text="ROTATE"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/space_right2"
+        app:layout_constraintStart_toEndOf="@+id/space_center2"
+        app:layout_constraintTop_toBottomOf="@+id/btn_toggle2"
+        app:layout_constraintVertical_bias="1.0"
+        app:layout_constraintWidth_percent="0.4" />
+
     <ImageView
         android:id="@+id/imgView_stillshot_org2"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#BAFFAA"
+        android:layout_marginBottom="10dp"
+        android:background="#000000"
         android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@+id/textView_msg2"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -21,69 +74,62 @@
         android:id="@+id/imgView_stillshot_processed2"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="15dp"
-        android:background="#B9FFFF"
+        android:background="#000000"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/textView_msg2"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/btn_pick"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="30dp"
-        android:text="CHOOSE"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_process2"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg2" />
-
-    <Button
-        android:id="@+id/btn_process2"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="30dp"
-        android:text="PROCESS"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/btn_toggle2"
-        app:layout_constraintStart_toEndOf="@+id/btn_pick"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg2" />
-
-    <Button
-        android:id="@+id/btn_toggle2"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="30dp"
-        android:text="TOGGLE"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/btn_process2"
-        app:layout_constraintTop_toBottomOf="@+id/textView_msg2"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintBottom_toBottomOf="@+id/imgView_stillshot_org2"
+        app:layout_constraintEnd_toEndOf="@+id/imgView_stillshot_org2"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/imgView_stillshot_org2"
+        app:layout_constraintTop_toTopOf="@+id/imgView_stillshot_org2"
+        app:layout_constraintVertical_bias="1.0" />
 
     <TextView
         android:id="@+id/textView_msg2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="30dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginEnd="30dp"
-        android:text="@string/Press_SHOOT"
+        android:layout_marginTop="10dp"
+        android:text="@string/press_CHOOSE"
         android:textSize="15dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_pick"
+        app:layout_constraintBottom_toTopOf="@+id/btn_choose"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/imgView_stillshot_org2" />
+
+    <Space
+        android:id="@+id/space_center2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_toggle2"
+        app:layout_constraintStart_toEndOf="@id/btn_choose"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg2"
+        app:layout_constraintWidth_percent="0.06" />
+
+    <Space
+        android:id="@+id/space_left2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_choose"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg2"
+        app:layout_constraintWidth_percent="0.07" />
+
+    <Space
+        android:id="@+id/space_right2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_toggle2"
+        app:layout_constraintTop_toBottomOf="@id/textView_msg2"
+        app:layout_constraintWidth_percent="0.07" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,96 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SubActivity_Test">
-
-    <TextView
-        android:id="@+id/text_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="111dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginEnd="111dp"
-        android:layout_marginBottom="15dp"
-        android:text="Simple Deep Learning"
-        android:textSize="30sp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_camera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sdc_logo" />
+    tools:context=".MainActivity">
 
     <ImageView
-        android:id="@+id/sdc_logo"
+        android:id="@+id/main_logo"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="30dp"
+        android:layout_marginStart="50dp"
         android:layout_marginTop="50dp"
-        android:layout_marginEnd="30dp"
-        android:layout_marginBottom="15dp"
-        android:layout_weight="1"
-        app:layout_constraintBottom_toTopOf="@+id/text_title"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/app_main_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/hello1" />
 
+    <TextView
+        android:id="@+id/app_main_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="Simple deep learning"
+        android:textSize="30dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/main_logo" />
+
     <Button
         android:id="@+id/btn_camera"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
-        android:text="Still shot"
-        android:textSize="20dp"
-        app:layout_constraintBottom_toTopOf="@+id/btn_gallery"
-        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
-        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/text_title" />
-
-    <Button
-        android:id="@+id/btn_gallery"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
-        android:text="gallery"
+        android:layout_marginBottom="20dp"
+        android:text="Camera"
         android:textSize="20dp"
         app:layout_constraintBottom_toTopOf="@+id/btn_test"
-        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_camera" />
+        app:layout_constraintEnd_toEndOf="@+id/main_logo"
+        app:layout_constraintStart_toStartOf="@+id/main_logo"
+        app:layout_constraintTop_toBottomOf="@+id/app_main_text" />
 
     <Button
         android:id="@+id/btn_test"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="15dp"
-        android:text="test"
+        android:layout_marginBottom="20dp"
+        android:text="Test"
+        android:textSize="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_gallery"
+        app:layout_constraintEnd_toEndOf="@+id/main_logo"
+        app:layout_constraintStart_toStartOf="@+id/main_logo"
+        app:layout_constraintTop_toBottomOf="@+id/btn_camera" />
+
+    <Button
+        android:id="@+id/btn_gallery"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:text="Gallery"
         android:textSize="20dp"
         app:layout_constraintBottom_toTopOf="@+id/btn_exit"
-        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_gallery" />
+        app:layout_constraintEnd_toEndOf="@+id/main_logo"
+        app:layout_constraintStart_toStartOf="@+id/main_logo"
+        app:layout_constraintTop_toBottomOf="@+id/btn_test" />
 
     <Button
         android:id="@+id/btn_exit"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:layout_marginBottom="30dp"
-        android:text="exit"
+        android:layout_marginBottom="70dp"
+        android:text="Exit"
         android:textSize="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/sdc_logo"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/sdc_logo"
-        app:layout_constraintTop_toBottomOf="@+id/btn_test" />
+        app:layout_constraintEnd_toEndOf="@+id/main_logo"
+        app:layout_constraintStart_toStartOf="@+id/main_logo"
+        app:layout_constraintTop_toBottomOf="@+id/btn_gallery" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
