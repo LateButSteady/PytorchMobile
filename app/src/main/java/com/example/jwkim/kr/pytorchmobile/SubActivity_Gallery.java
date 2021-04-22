@@ -41,10 +41,14 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
     Button btn_rotate2 = null;
     Uri photoURI = null;
 
+    private boolean bRescale = false;
     private float exifDegree; // output Bitmap rotation 각
     private Bitmap inputBitmap = null;
-    private Bitmap outputBitmap_tmp = null;
+    private Bitmap inputBitmap_rotate = null;
+    private Bitmap inputBitmap_rescale = null;
+
     private Bitmap outputBitmap = null;
+    private Bitmap outputBitmap_tmp = null;
     private Module module = null;
 
     private View.OnClickListener clickListener;
@@ -94,8 +98,8 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                 Log.i(getString(R.string.tag), "CHOOSE button pressed");
 
                 // 먼저 초기화
-                Bitmap inputBitmap = null;
-                Bitmap outputBitmap = null;
+                inputBitmap = null;
+                outputBitmap = null;
                 imgView_stillshot_org2.setImageBitmap(inputBitmap);
                 imgView_stillshot_processed2.setImageBitmap(outputBitmap);
                 imgView_stillshot_org2.setVisibility(View.VISIBLE);
@@ -120,12 +124,6 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                     break;
                 }
 
-            /*
-            // PROCESS 버튼 비활성화
-            btn_process2.setText("RUNNING...");
-            btn_process2.setEnabled(false);
-            */
-
                 // Extension 체크
                 if (null != mCurrentPhotoPath) {
                     Log.i(getString(R.string.tag), "File extension : " + util_common.getExtension(mCurrentPhotoPath));
@@ -139,32 +137,45 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                 }
 
                 // input bitmap 불러오기
+                exifDegree = util_common.getRotatationDegreeFromExif(mCurrentPhotoPath);
                 inputBitmap = util_common.loadFileToBitmap(mCurrentPhotoPath);
 
+                // 바로 세우도록 회전
+                inputBitmap_rotate = util_common.rotate(inputBitmap, exifDegree);
+
+                // 원래 image size
+                final int h = inputBitmap_rotate.getHeight();
+                final int w = inputBitmap_rotate.getWidth();
+
                 // FHD 아니라면 rescale
-                final int h = inputBitmap.getHeight();
-                final int w = inputBitmap.getWidth();
                 if (!((1080 == h && 1920 == w) || (1920 == h && 1080 == w))) {
+                    bRescale = true;
                     // 세로 이미지
                     if (h > w) {
-                        inputBitmap = Bitmap.createScaledBitmap(inputBitmap, 1080, 1920, false);
+                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, 1080, 1920, false);
                     }
                     // 가로 이미지
                     else {
-                        inputBitmap = Bitmap.createScaledBitmap(inputBitmap, 1920, 1080, false);
+                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, 1920, 1080, false);
                     }
-                }
+                } else inputBitmap_rescale = inputBitmap_rotate;
+
                 // height, width 중 0이 하나라도 있다면 error
                 if (0 == h || 0 == w) {
                     util_common.fn_error("Input bitmap h=0 or w=0", getString(R.string.tag));
                 }
 
+                // runModel 시작 (rotate + rescale 이미지)
                 Log.i(getString(R.string.tag), "Start runModel");
-                Bitmap outputBitmap_tmp = util_cnn.runModel(module, inputBitmap);
+                outputBitmap_tmp = util_cnn.runModel(module, inputBitmap_rescale);
 
-                // rotate시켜서 output Bitmap 똑바로 세우기
-                exifDegree = util_common.getRotatationDegreeFromExif(mCurrentPhotoPath);
-                outputBitmap = util_common.rotate(outputBitmap_tmp, exifDegree);
+                // rescale 된거라면 되돌리기
+                if (bRescale) {
+                    outputBitmap_tmp = Bitmap.createScaledBitmap(outputBitmap_tmp, w, h, false);
+                }
+
+                // output을 input 파일처럼 돌리고 rescale
+                outputBitmap = util_common.rotate(outputBitmap_tmp, -exifDegree);
 
                 // 처리된 영상 save
                 try {
@@ -183,12 +194,6 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                 imgView_stillshot_org2.setVisibility(View.INVISIBLE);
 
                 textView_msg2.setText(getString(R.string.press_TOGGLE));
-
-            /*
-            // PROCESS 버튼 재활성화
-            btn_process2.setText("PROCESS");
-            btn_process2.setEnabled(true);
-            */
 
                 break;
 
@@ -239,7 +244,9 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
         //Intent 생성
         Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
-        intent.setType("image/*"); //이미지만 보이게
+        //이미지만 보이도록
+        intent.setType("image/*");
+
         //Intent 시작 - 갤러리앱을 열어서 원하는 이미지를 선택할 수 있다.
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }

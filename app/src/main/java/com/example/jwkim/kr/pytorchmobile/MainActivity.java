@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // onClickListener 선언 (버튼 여러개 코드 간단하게 구현하기 위해 필요)
     // 참고: https://seungjuitmemo.tistory.com/66
     private View.OnClickListener clickListener;
+    TextView text_manufacturer = null;
+    TextView text_model = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +39,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button btn_gallery = (Button) findViewById(R.id.btn_gallery);
         Button btn_exit = (Button) findViewById(R.id.btn_exit);
 
+        // 제조사, 모델 코드 표시
+        text_manufacturer = (TextView) findViewById(R.id.info_manufacturer);
+        text_model = (TextView) findViewById(R.id.info_model);
+        text_manufacturer.setText(Build.MANUFACTURER);
+        text_model.setText(Build.MODEL);
 
         btn_camera.setOnClickListener(this);
         btn_test.setOnClickListener(this);
@@ -42,13 +51,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_exit.setOnClickListener(this);
 
         Log.i(getString(R.string.tag), "API version is " + Build.VERSION.SDK_INT);
+        Log.i(getString(R.string.tag), "API version is \"" + Build.VERSION.SDK_INT + "\"");
+        Log.i(getString(R.string.tag), "Manufacturer is \"" + Build.MANUFACTURER + "\"");
+        Log.i(getString(R.string.tag), "Market model name is \"" + Build.MODEL + "\"");
+        Log.i(getString(R.string.tag), "Device name is \"" + Build.DEVICE + "\"");
+
     }
 
+    // 여러개 버튼 처리
     @Override
     public void onClick(@NonNull View v) {
-
         Intent intent;
-
         switch (v.getId()) {
             case R.id.btn_camera:
                 intent = new Intent(MainActivity.this, SubActivity_Camera.class);
