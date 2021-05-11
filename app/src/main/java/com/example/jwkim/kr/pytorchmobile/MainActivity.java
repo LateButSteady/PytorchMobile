@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_gallery.setOnClickListener(this);
         btn_exit.setOnClickListener(this);
 
-        Log.i(getString(R.string.tag), "API version is " + Build.VERSION.SDK_INT);
         Log.i(getString(R.string.tag), "API version is \"" + Build.VERSION.SDK_INT + "\"");
         Log.i(getString(R.string.tag), "Manufacturer is \"" + Build.MANUFACTURER + "\"");
         Log.i(getString(R.string.tag), "Market model name is \"" + Build.MODEL + "\"");

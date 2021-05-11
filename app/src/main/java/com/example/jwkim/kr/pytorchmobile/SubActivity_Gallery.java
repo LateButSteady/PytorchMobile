@@ -1,59 +1,91 @@
 package com.example.jwkim.kr.pytorchmobile;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import org.pytorch.Module;
+import com.example.jwkim.kr.pytorchmobile.R;
+import com.example.jwkim.kr.pytorchmobile.Util_CNN;
+import com.example.jwkim.kr.pytorchmobile.Util_Common;
 
+import org.tensorflow.lite.DataType;
+import org.tensorflow.lite.Interpreter;
+import org.tensorflow.lite.nnapi.NnApiDelegate;
+import org.tensorflow.lite.support.image.TensorImage;
+
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
-public class SubActivity_Gallery extends AppCompatActivity implements View.OnClickListener {
+public class SubActivity_Gallery extends AppCompatActivity  implements View.OnClickListener {
 
     public SubActivity_Gallery() {
         // empty constructor
     }
 
-    final int PICK_IMAGE_REQUEST = 1000;
+    Util_Common util_common = new Util_Common(SubActivity_Gallery.this);
+    Util_CNN util_cnn    = new Util_CNN(SubActivity_Gallery.this);
+
+    final static int PICK_IMAGE_REQUEST = 2000;
     boolean good2Process = false;
 
-    ImageView imgView_stillshot_org2 = null;
-    ImageView imgView_stillshot_processed2 = null;
-    TextView textView_msg2 = null;
-    String mCurrentPhotoPath = null;
-    String mCurrentPhotoPath_RIA = null;
     Button btn_choose = null;
     Button btn_process2 = null;
     Button btn_toggle2 = null;
-    Button btn_rotate2 = null;
+    Button btn_image_rotate2 = null;
+    String mCurrentPhotoPath = null;
+    String mCurrentPhotoPath_RIA = null;
+    ImageView imgView_stillshot_org2 = null;
+    ImageView imgView_stillshot_processed2 = null;
+    Bitmap inputBitmap = null;
+    Bitmap inputBitmap_rotate = null;
+    Bitmap inputBitmap_rescale = null;
+    Bitmap outputBitmap = null;
+    Bitmap outputBitmap_tmp = null;
+    TextView textView_msg2 = null;
     Uri photoURI = null;
+    boolean bRescale = false;
+    boolean useNnapi = false;
+    //ProgressBar pbar = null;
+    Interpreter tflite = null;
+    NnApiDelegate nnApiDelegate = null;
+    private long time_start = 0;
+    private long time_taken = 0;
 
-    private boolean bRescale = false;
     private float exifDegree; // output Bitmap rotation 각
-    private Bitmap inputBitmap = null;
-    private Bitmap inputBitmap_rotate = null;
-    private Bitmap inputBitmap_rescale = null;
+    //private Module module = null;
 
-    private Bitmap outputBitmap = null;
-    private Bitmap outputBitmap_tmp = null;
-    private Module module = null;
+    static final int DIM_IMG_RGB = 3;
+    ByteBuffer inputBuffer = null;
+    ByteBuffer outputBuffer = null;
+    //ThreadTest thread;
 
-    private View.OnClickListener clickListener;
-    Util_Common util_common  = new Util_Common(SubActivity_Gallery.this);
-    Util_CNN    util_cnn     = new Util_CNN(SubActivity_Gallery.this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,9 +98,8 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
         btn_choose = findViewById(R.id.btn_choose);
         btn_process2 = findViewById(R.id.btn_process2);
         btn_toggle2 = findViewById(R.id.btn_toggle2);
+        btn_image_rotate2 = findViewById(R.id.btn_rotate2);
         textView_msg2 = findViewById(R.id.textView_msg2);
-        btn_rotate2 = findViewById(R.id.btn_rotate2);
-
 
         // 권한 설정
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -81,27 +112,45 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
             }
         }
 
-        // 이걸 넣어줘야 listen 시작함
+        // nnapi delegate 미리 초기화
+        Interpreter.Options options = (new Interpreter.Options());
+        if (useNnapi) {
+            // tflite nnapi delegate
+            // 참고: https://www.tensorflow.org/lite/performance/nnapi?hl=ko
+            // Initialize interpreter with NNAPI delegate for Android Pie or above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                nnApiDelegate = new NnApiDelegate();
+                options.addDelegate(nnApiDelegate);
+            }
+        } else {
+            options = null;
+        }
+        tflite = getTfliteInterpreter("my_cnn.tflite", options);
+        if (null == nnApiDelegate) {
+            Log.i(getString(R.string.tag), "NNAPI delegate is null...");
+        } else {
+            Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
+        }
+
+        // Button listen set
         btn_choose.setOnClickListener(this);
         btn_process2.setOnClickListener(this);
         btn_toggle2.setOnClickListener(this);
-        btn_rotate2.setOnClickListener(this);
-
+        btn_image_rotate2.setOnClickListener(this);
     }
 
 
     // 여러개 버튼 처리
+    @SuppressLint("NonConstantResourceId")
     @Override
-    public void onClick(View v) {
+    public void onClick(@NonNull View v) {
         switch (v.getId()) {
             case R.id.btn_choose:
                 Log.i(getString(R.string.tag), "CHOOSE button pressed");
 
                 // 먼저 초기화
-                inputBitmap = null;
-                outputBitmap = null;
-                imgView_stillshot_org2.setImageBitmap(inputBitmap);
-                imgView_stillshot_processed2.setImageBitmap(outputBitmap);
+                imgView_stillshot_org2.setImageBitmap(null);
+                imgView_stillshot_processed2.setImageBitmap(null);
                 imgView_stillshot_org2.setVisibility(View.VISIBLE);
                 imgView_stillshot_processed2.setVisibility(View.INVISIBLE);
                 exifDegree = 0;
@@ -124,20 +173,34 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                     break;
                 }
 
+                // PROCESS 버튼 비활성화
+                //thread = new ThreadTest(pbar);
+                //btn_process2.setText("RUNNING...");
+                //btn_process2.setEnabled(false);
+
+                // 먼저 imageView 비었으면 에러
+                if (null == imgView_stillshot_org2.getDrawable()) {
+                    Log.e(getString(R.string.tag), "imgView is Empty");
+                    textView_msg2.setText(getString(R.string.press_SHOOT));
+                    Toast.makeText(SubActivity_Gallery.this, getString(R.string.press_SHOOT), Toast.LENGTH_SHORT).show();
+                    break;
+                }
+
+                // 사진 찍지 않거나 실패해서 file size = 0 이라면 에러
+                if (0 == util_common.getFileSize(mCurrentPhotoPath)) {
+                    Log.e(getString(R.string.tag), "File size = 0kB");
+                    textView_msg2.setText(getString(R.string.press_SHOOT));
+                    Toast.makeText(SubActivity_Gallery.this, getString(R.string.press_SHOOT), Toast.LENGTH_SHORT).show();
+                    break;
+                }
+
                 // Extension 체크
                 if (null != mCurrentPhotoPath) {
                     Log.i(getString(R.string.tag), "File extension : " + util_common.getExtension(mCurrentPhotoPath));
                 }
 
-                // asset에서 CNN model 불러오기
-                try {
-                    module = util_cnn.loadModelCNN(getString(R.string.CNN_Model_FileName));
-                } catch (IOException e) {
-                    util_common.fn_IOexception(e, "Error reading assets", getString(R.string.tag));
-                }
-
                 // input bitmap 불러오기
-                exifDegree = util_common.getRotatationDegreeFromExif(mCurrentPhotoPath);
+                //exifDegree = util_common.getRotatationDegreeFromExif(mCurrentPhotoPath);
                 inputBitmap = util_common.loadFileToBitmap(mCurrentPhotoPath);
 
                 // 바로 세우도록 회전
@@ -147,6 +210,7 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                 final int h = inputBitmap_rotate.getHeight();
                 final int w = inputBitmap_rotate.getWidth();
 
+                /*
                 // FHD 아니라면 rescale
                 if (!((1080 == h && 1920 == w) || (1920 == h && 1080 == w))) {
                     bRescale = true;
@@ -159,15 +223,64 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                         inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, 1920, 1080, false);
                     }
                 } else inputBitmap_rescale = inputBitmap_rotate;
+                 */
+
+
+                ////// ByteBuffer 준비 (input, output)
+                inputBitmap_rescale = inputBitmap_rotate;
+                //inputBuffer = bitmap2bytebuffer(inputBitmap_rescale, w, h, DIM_IMG_RGB);
+                // 다시 bitmap으로 되돌려서 확인 -> 정상으로 돌아옴
+                //Bitmap aaa = getOutputImage(inputBuffer, w, h);
+                // outputBuffer 준비
+                outputBuffer = ByteBuffer.allocateDirect(4 * h * w * DIM_IMG_RGB);
+                outputBuffer.order(ByteOrder.nativeOrder());
+                outputBuffer.rewind();
+
 
                 // height, width 중 0이 하나라도 있다면 error
                 if (0 == h || 0 == w) {
                     util_common.fn_error("Input bitmap h=0 or w=0", getString(R.string.tag));
                 }
 
+                // 시간 측정 시작
+                time_start = System.currentTimeMillis();
+
+                //TensorImage tfImage = new TensorImage(DataType.UINT8);
+                TensorImage tfImage = new TensorImage(DataType.FLOAT32);
+
+                // tfImage.load가 ARGB_8888만 받아들임
+                inputBitmap_rescale = inputBitmap_rescale.copy(Bitmap.Config.ARGB_8888, true);
+                tfImage.fromBitmap(inputBitmap_rescale);
+                tfImage.load(inputBitmap_rescale);
+
+                inputBuffer = tfImage.getBuffer();
+
+                time_taken = System.currentTimeMillis() - time_start;
+                Log.i(getString(R.string.tag), "Time taken: bitmap -> byteBuffer = " + time_taken + " ms");
+
                 // runModel 시작 (rotate + rescale 이미지)
                 Log.i(getString(R.string.tag), "Start runModel");
-                outputBitmap_tmp = util_cnn.runModel(module, inputBitmap_rescale);
+
+                tflite.run(inputBuffer, outputBuffer);
+
+                // time check
+                time_taken = System.currentTimeMillis() - time_start - time_taken;
+                Log.i(getString(R.string.tag), "Time taken: run model = " + time_taken + " ms");
+
+                // Unload delegate
+                // 이걸 어디에 위치시켜야 할 지 고민 필요함
+                // 현재는 back 버튼 눌러서 mainActivity에 간 후, 다시 gallery로 돌아와야만 NNAPI를 초기화 하게끔 되어있음
+                // process 버튼은 일회용임
+                if (useNnapi) {
+                    tflite.close();
+                    if(null != nnApiDelegate) {
+                        nnApiDelegate.close();
+                    }
+                }
+                Log.i(getString(R.string.tag), "nnApi is closed");
+
+                // output ByteBuffer -> bitmap
+                outputBitmap_tmp = getOutputImage(outputBuffer, w, h);
 
                 // rescale 된거라면 되돌리기
                 if (bRescale) {
@@ -177,6 +290,10 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                 // output을 input 파일처럼 돌리고 rescale
                 outputBitmap = util_common.rotate(outputBitmap_tmp, -exifDegree);
 
+                // time check
+                time_taken = System.currentTimeMillis() - time_start - time_taken;
+                Log.i(getString(R.string.tag), "Time taken: byte buffer -> bitmap = " + time_taken + " ms");
+
                 // 처리된 영상 save
                 try {
                     util_common.saveBitmapToFile(outputBitmap, mCurrentPhotoPath_RIA);
@@ -185,15 +302,23 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
                     util_common.fn_IOexception(e, "Error writing RIA image file", getString(R.string.tag));
                 }
 
+
+
                 // 결과 띄우기 (rescale 되었을 수도 있으니 다시 띄우기)
-                imgView_stillshot_processed2.setImageBitmap(outputBitmap);
-                imgView_stillshot_org2.setImageBitmap(util_common.rotate(inputBitmap,exifDegree));
+                imgView_stillshot_processed2.setImageBitmap(util_common.rotate(outputBitmap, exifDegree));
+                imgView_stillshot_org2.setImageBitmap(util_common.rotate(inputBitmap, exifDegree));
 
                 // 결과 영상 띄우기
                 imgView_stillshot_processed2.setVisibility(View.VISIBLE);
                 imgView_stillshot_org2.setVisibility(View.INVISIBLE);
 
                 textView_msg2.setText(getString(R.string.press_TOGGLE));
+
+                /*
+                // PROCESS 버튼 재활성화
+                btn_process2.setText("PROCESS");
+                btn_process2.setEnabled(true);
+                */
 
                 break;
 
@@ -234,6 +359,77 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
     }
 
 
+    // bitmap -> float 값을 가진 ByteBuffer
+    // 드디어 output이 float형태로 12288 맞춰진다.
+    // https://wikidocs.net/101767
+    private @NonNull ByteBuffer bitmap2bytebuffer(@NonNull Bitmap bitmap, @NonNull int width, @NonNull int height, @NonNull int color) {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(width * height * color * 4);
+        byteBuffer.order(ByteOrder.nativeOrder()); //A float has 4 bytes
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+
+                Bitmap mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                int pixel = mutableBitmap.getPixel(x, y);
+
+                // Get channel values from the pixel value.
+                int r = Color.red(pixel);
+                int g = Color.green(pixel);
+                int b = Color.blue(pixel);
+                //int r = (pixel >> 16) & 0xFF;
+                //int g = (pixel >> 8) & 0xFF;
+                //int b = (pixel) & 0xFF;
+
+                // Normalize channel values to [-1.0, 1.0]. This requirement depends
+                // on the model. For example, some models might require values to be
+                // normalized to the range [0.0, 1.0] instead.
+                //float rf = (r - 127) / 255.0f;
+                //float gf = (g - 127) / 255.0f;
+                //float bf = (b - 127) / 255.0f;
+                float rf = r;
+                float gf = g;
+                float bf = b;
+
+                byteBuffer.putFloat(rf);
+                byteBuffer.putFloat(gf);
+                byteBuffer.putFloat(bf);
+            }
+        }
+
+        return byteBuffer;
+    }
+
+    // ByteBuffer -> Bitmap
+    // 참고: https://github.com/tensorflow/tensorflow/issues/34992
+    private @NonNull Bitmap getOutputImage(@NonNull ByteBuffer output, @NonNull int width, @NonNull int height){
+        output.rewind();
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        int [] pixels = new int[width * height];
+        for (int i = 0; i < width * height; i++) {
+            int a = 0xFF;
+
+            float r = output.getFloat();
+            float g = output.getFloat();
+            float b = output.getFloat();
+
+            pixels[i] = a << 24 | ((int) r << 16) | ((int) g << 8) | (int) b;
+        }
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return bitmap;
+    }
+
+
+
+    // Bitmap Byte size 구하기
+    protected int byteSizeOf(Bitmap data) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR1) {
+            return data.getRowBytes() * data.getHeight();
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            return data.getByteCount();
+        } else {
+            return data.getAllocationByteCount();
+        }
+    }
 
 
     /*
@@ -241,10 +437,10 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
      * 참고: https://blog.naver.com/cosmosjs/220940841567
      */
     public void loadImagefromGallery(View view) {
-        //Intent 생성
+        // Intent 생성
         Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
-        //이미지만 보이도록
+        // 목록에 이미지만 나오도록
         intent.setType("image/*");
 
         //Intent 시작 - 갤러리앱을 열어서 원하는 이미지를 선택할 수 있다.
@@ -306,4 +502,43 @@ public class SubActivity_Gallery extends AppCompatActivity implements View.OnCli
         return bRtnValue;
     }
 
+
+    /*
+     * Thread 구현 pbar
+     */
+    public class ThreadTest extends Thread {
+        public ThreadTest() {
+            // 초기화
+        }
+
+        public void run(@NonNull ProgressBar pbar) {
+            pbar.setEnabled(true);
+        }
+
+    }
+
+    // Initialize TFLite interpreter
+    // 모델 파일 인터프리터를 생성하는 공통 함수
+    // loadModelFile 함수에 예외가 포함되어 있기 때문에 반드시 try, catch 블록이 필요하다.
+    private Interpreter getTfliteInterpreter(String modelPath, @Nullable Interpreter.Options options) {
+        try {
+            return new Interpreter(loadModelFile(this, modelPath), options);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    // 모델을 읽어오는 함수로, 텐서플로 라이트 홈페이지에 있다.
+    // MappedByteBuffer 바이트 버퍼를 Interpreter 객체에 전달하면 모델 해석을 할 수 있다.
+    private MappedByteBuffer loadModelFile(Activity activity, String modelPath) throws IOException {
+        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(modelPath);
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
 }
