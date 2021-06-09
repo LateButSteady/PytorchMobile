@@ -34,6 +34,8 @@ import com.example.jwkim.kr.pytorchmobile.Util_Common;
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
+import org.tensorflow.lite.support.common.ops.DequantizeOp;
+import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 
 import java.io.FileInputStream;
@@ -50,15 +52,17 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
     }
 
     Util_Common util_common = new Util_Common(SubActivity_Gallery.this);
-    Util_CNN util_cnn    = new Util_CNN(SubActivity_Gallery.this);
+//    Util_CNN util_cnn    = new Util_CNN(SubActivity_Gallery.this);
 
     final static int PICK_IMAGE_REQUEST = 2000;
     boolean good2Process = false;
+    boolean bRescale = false;
+    boolean useNnapi = false;
 
     Button btn_choose = null;
     Button btn_process2 = null;
     Button btn_toggle2 = null;
-    Button btn_image_rotate2 = null;
+    Button btn_rotate2 = null;
     String mCurrentPhotoPath = null;
     String mCurrentPhotoPath_RIA = null;
     ImageView imgView_stillshot_org2 = null;
@@ -70,15 +74,11 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
     Bitmap outputBitmap_tmp = null;
     TextView textView_msg2 = null;
     Uri photoURI = null;
-    boolean bRescale = false;
-    boolean useNnapi = false;
-    //ProgressBar pbar = null;
-    Interpreter tflite = null;
-    NnApiDelegate nnApiDelegate = null;
     private long time_start = 0;
     private long time_taken = 0;
 
-    private float exifDegree; // output Bitmap rotation 각
+    private float exifDegree;
+    private float rotateDegree = 0;
     //private Module module = null;
 
     static final int DIM_IMG_RGB = 3;
@@ -86,6 +86,14 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
     ByteBuffer outputBuffer = null;
     //ThreadTest thread;
 
+    // nnapi delegate 미리 초기화
+    Interpreter tflite = null;
+    Interpreter.Options options = new Interpreter.Options();
+    private NnApiDelegate nnApiDelegate = null;
+    // private HexagonDelegate hexagonDelegate;
+
+    final int h_FHD = 32;
+    final int w_FHD = 32;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,7 +106,7 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
         btn_choose = findViewById(R.id.btn_choose);
         btn_process2 = findViewById(R.id.btn_process2);
         btn_toggle2 = findViewById(R.id.btn_toggle2);
-        btn_image_rotate2 = findViewById(R.id.btn_rotate2);
+        btn_rotate2 = findViewById(R.id.btn_rotate2);
         textView_msg2 = findViewById(R.id.textView_msg2);
 
         // 권한 설정
@@ -112,31 +120,11 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
             }
         }
 
-        // nnapi delegate 미리 초기화
-        Interpreter.Options options = (new Interpreter.Options());
-        if (useNnapi) {
-            // tflite nnapi delegate
-            // 참고: https://www.tensorflow.org/lite/performance/nnapi?hl=ko
-            // Initialize interpreter with NNAPI delegate for Android Pie or above
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                nnApiDelegate = new NnApiDelegate();
-                options.addDelegate(nnApiDelegate);
-            }
-        } else {
-            options = null;
-        }
-        tflite = getTfliteInterpreter("my_cnn.tflite", options);
-        if (null == nnApiDelegate) {
-            Log.i(getString(R.string.tag), "NNAPI delegate is null...");
-        } else {
-            Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
-        }
-
         // Button listen set
         btn_choose.setOnClickListener(this);
         btn_process2.setOnClickListener(this);
         btn_toggle2.setOnClickListener(this);
-        btn_image_rotate2.setOnClickListener(this);
+        btn_rotate2.setOnClickListener(this);
     }
 
 
@@ -207,40 +195,32 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 inputBitmap_rotate = util_common.rotate(inputBitmap, exifDegree);
 
                 // 원래 image size
-                final int h = inputBitmap_rotate.getHeight();
-                final int w = inputBitmap_rotate.getWidth();
+                final int h_org = inputBitmap_rotate.getHeight();
+                final int w_org = inputBitmap_rotate.getWidth();
 
-                /*
                 // FHD 아니라면 rescale
-                if (!((1080 == h && 1920 == w) || (1920 == h && 1080 == w))) {
+                if (!((h_FHD == h_org && w_FHD == w_org) || (w_FHD == h_org && h_FHD == w_org))) {
                     bRescale = true;
+
                     // 세로 이미지
-                    if (h > w) {
-                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, 1080, 1920, false);
+                    if (h_org > w_org) {
+                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, w_FHD, h_FHD, false);
                     }
                     // 가로 이미지
                     else {
-                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, 1920, 1080, false);
+                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, w_FHD, h_FHD, false);
                     }
                 } else inputBitmap_rescale = inputBitmap_rotate;
-                 */
-
-
-                ////// ByteBuffer 준비 (input, output)
-                inputBitmap_rescale = inputBitmap_rotate;
-                //inputBuffer = bitmap2bytebuffer(inputBitmap_rescale, w, h, DIM_IMG_RGB);
-                // 다시 bitmap으로 되돌려서 확인 -> 정상으로 돌아옴
-                //Bitmap aaa = getOutputImage(inputBuffer, w, h);
-                // outputBuffer 준비
-                outputBuffer = ByteBuffer.allocateDirect(4 * h * w * DIM_IMG_RGB);
-                outputBuffer.order(ByteOrder.nativeOrder());
-                outputBuffer.rewind();
-
 
                 // height, width 중 0이 하나라도 있다면 error
-                if (0 == h || 0 == w) {
+                if (0 == h_org || 0 == w_org) {
                     util_common.fn_error("Input bitmap h=0 or w=0", getString(R.string.tag));
                 }
+
+                // outputBuffer 준비
+                outputBuffer = ByteBuffer.allocateDirect(4 * w_FHD * h_FHD * DIM_IMG_RGB);
+                outputBuffer.order(ByteOrder.nativeOrder());
+                outputBuffer.rewind();
 
                 // 시간 측정 시작
                 time_start = System.currentTimeMillis();
@@ -253,19 +233,35 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 tfImage.fromBitmap(inputBitmap_rescale);
                 tfImage.load(inputBitmap_rescale);
 
-                inputBuffer = tfImage.getBuffer();
+                // input 영상을 [0, 1] 범위로 normalize
+                ImageProcessor imageProcessor = new ImageProcessor.Builder()
+                        .add(new DequantizeOp(0, 1.0f/255.f))
+                        .build();
+                TensorImage dequantized = imageProcessor.process(tfImage);
 
+                // input 영상 TensorImage -> bytebuffer
+                inputBuffer = dequantized.getBuffer();
+
+                // time check
                 time_taken = System.currentTimeMillis() - time_start;
                 Log.i(getString(R.string.tag), "Time taken: bitmap -> byteBuffer = " + time_taken + " ms");
 
                 // runModel 시작 (rotate + rescale 이미지)
                 Log.i(getString(R.string.tag), "Start runModel");
+                tflite = getTfliteInterpreter("my_cnn_epoch10.tflite", useNnapi);
+
+                if (null == nnApiDelegate) {
+                    Log.i(getString(R.string.tag), "NNAPI delegate is null...");
+                } else {
+                    Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
+                }
 
                 tflite.run(inputBuffer, outputBuffer);
 
                 // time check
                 time_taken = System.currentTimeMillis() - time_start - time_taken;
                 Log.i(getString(R.string.tag), "Time taken: run model = " + time_taken + " ms");
+
 
                 // Unload delegate
                 // 이걸 어디에 위치시켜야 할 지 고민 필요함
@@ -275,16 +271,16 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                     tflite.close();
                     if(null != nnApiDelegate) {
                         nnApiDelegate.close();
+                        Log.i(getString(R.string.tag), "nnApi is closed");
                     }
                 }
-                Log.i(getString(R.string.tag), "nnApi is closed");
 
                 // output ByteBuffer -> bitmap
-                outputBitmap_tmp = getOutputImage(outputBuffer, w, h);
+                outputBitmap_tmp = getOutputImage(outputBuffer, w_FHD, h_FHD);
 
                 // rescale 된거라면 되돌리기
                 if (bRescale) {
-                    outputBitmap_tmp = Bitmap.createScaledBitmap(outputBitmap_tmp, w, h, false);
+                    outputBitmap_tmp = Bitmap.createScaledBitmap(outputBitmap_tmp, w_org, h_org, false);
                 }
 
                 // output을 input 파일처럼 돌리고 rescale
@@ -301,8 +297,6 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 catch(IOException e) {
                     util_common.fn_IOexception(e, "Error writing RIA image file", getString(R.string.tag));
                 }
-
-
 
                 // 결과 띄우기 (rescale 되었을 수도 있으니 다시 띄우기)
                 imgView_stillshot_processed2.setImageBitmap(util_common.rotate(outputBitmap, exifDegree));
@@ -330,10 +324,7 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
 
             case R.id.btn_rotate2:
                 Log.i(getString(R.string.tag), "Rotate button pressed");
-                // 방어코드 조건
-                //   - ImageView 화면이 empty
-                //   - path = null
-                //   - path의 파일 사이즈 = 0 (이건 다른 if문으로 체크)
+
                 if (util_common.checkEmptyImageView(imgView_stillshot_org2)
                         || null == mCurrentPhotoPath) {
                     Toast.makeText(SubActivity_Gallery.this, getString(R.string.press_CHOOSE), Toast.LENGTH_LONG).show();
@@ -345,11 +336,11 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 }
 
 
-                exifDegree = (float) ((exifDegree - 90.0) % 360);
+                rotateDegree = (float) ((rotateDegree - 90.0) % 360);
                 Log.i(getString(R.string.tag), "exifDegree = " + exifDegree);
 
-                util_common.rotateImageView(imgView_stillshot_org2, mCurrentPhotoPath, exifDegree);
-                util_common.rotateImageView(imgView_stillshot_processed2, mCurrentPhotoPath_RIA, exifDegree);
+                util_common.rotateImageView(imgView_stillshot_org2, mCurrentPhotoPath, rotateDegree);
+                util_common.rotateImageView(imgView_stillshot_processed2, mCurrentPhotoPath_RIA, rotateDegree);
 
                 break;
 
@@ -375,16 +366,10 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 int r = Color.red(pixel);
                 int g = Color.green(pixel);
                 int b = Color.blue(pixel);
-                //int r = (pixel >> 16) & 0xFF;
-                //int g = (pixel >> 8) & 0xFF;
-                //int b = (pixel) & 0xFF;
 
                 // Normalize channel values to [-1.0, 1.0]. This requirement depends
                 // on the model. For example, some models might require values to be
                 // normalized to the range [0.0, 1.0] instead.
-                //float rf = (r - 127) / 255.0f;
-                //float gf = (g - 127) / 255.0f;
-                //float bf = (b - 127) / 255.0f;
                 float rf = r;
                 float gf = g;
                 float bf = b;
@@ -408,9 +393,13 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
         for (int i = 0; i < width * height; i++) {
             int a = 0xFF;
 
-            float r = output.getFloat();
-            float g = output.getFloat();
-            float b = output.getFloat();
+            float rf = output.getFloat() * 255.f;
+            float gf = output.getFloat() * 255.f;
+            float bf = output.getFloat() * 255.f;
+
+            int r = rf > 255.f ? 255 : rf < 0.f ? 0: (int)rf;
+            int g = gf > 255.f ? 255 : rf < 0.f ? 0: (int)gf;
+            int b = bf > 255.f ? 255 : rf < 0.f ? 0: (int)bf;
 
             pixels[i] = a << 24 | ((int) r << 16) | ((int) g << 8) | (int) b;
         }
@@ -461,12 +450,10 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
 
                 util_common.dispImgFile(imgView_stillshot_org2, mCurrentPhotoPath);
             }
-
         } catch (Exception e) {
             Toast.makeText(this, "로딩에 오류가 있습니다.", Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
-
     }
 
 
@@ -520,13 +507,29 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
     // Initialize TFLite interpreter
     // 모델 파일 인터프리터를 생성하는 공통 함수
     // loadModelFile 함수에 예외가 포함되어 있기 때문에 반드시 try, catch 블록이 필요하다.
-    private Interpreter getTfliteInterpreter(String modelPath, @Nullable Interpreter.Options options) {
+    private Interpreter getTfliteInterpreter(String modelPath, boolean useNnApi) {
+        // Initialize interpreter with NNAPI delegate for Android Pie or above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            useNnApi = true;
+        }
+
         try {
-            return new Interpreter(loadModelFile(this, modelPath), options);
+//            System.loadLibrary("tensorflowlite_hexagon_jni");
+//            Interpreter.Options options = new Interpreter.Options();
+            nnApiDelegate = new NnApiDelegate();
+            if (useNnApi)
+                options.addDelegate(nnApiDelegate);
+//            hexagonDelegate = new HexagonDelegate(this);
+//            options.addDelegate((hexagonDelegate));
+            Interpreter interpreter = new Interpreter(loadModelFile(this, modelPath), options);
+            return interpreter;
+//            return new Interpreter(loadModelFile(this, modelPath), options);
         }
         catch (Exception e) {
             e.printStackTrace();
         }
+
+        // 여기까지 오지 않음
         return null;
     }
 
