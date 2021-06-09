@@ -91,8 +91,8 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
     private NnApiDelegate nnApiDelegate = null;
     // private HexagonDelegate hexagonDelegate;
 
-    final int h_FHD = 32;
-    final int w_FHD = 32;
+    int h_FHD = 0;
+    int w_FHD = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -187,18 +187,23 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
                 final int w_org = inputBitmap_rotate.getWidth();
 
                 // FHD 아니라면 rescale
-                if (!((h_FHD == h_org && w_FHD == w_org) || (w_FHD == h_org && h_FHD == w_org))) {
-                    bRescale = true;
+                // 세로 이미지
+                if (h_org > w_org) {
+                    h_FHD = 32;
+                    w_FHD = 32;
+                }
+                // 가로 이미지
+                else {
+                    h_FHD = 32;
+                    w_FHD = 32;
+                }
 
-                    // 세로 이미지
-                    if (h_org > w_org) {
-                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, w_FHD, h_FHD, false);
-                    }
-                    // 가로 이미지
-                    else {
-                        inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, w_FHD, h_FHD, false);
-                    }
-                } else inputBitmap_rescale = inputBitmap_rotate;
+                if (!(h_FHD == h_org && w_FHD == w_org)) {
+                    bRescale = true;
+                    inputBitmap_rescale = Bitmap.createScaledBitmap(inputBitmap_rotate, w_FHD, h_FHD, false);
+                } else {
+                    inputBitmap_rescale = inputBitmap_rotate;
+                }
 
                 // height, width 중 0이 하나라도 있다면 error
                 if (0 == h_org || 0 == w_org) {
