@@ -1,19 +1,15 @@
 package com.example.jwkim.kr.pytorchmobile;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -23,13 +19,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
-import com.example.jwkim.kr.pytorchmobile.R;
-import com.example.jwkim.kr.pytorchmobile.Util_CNN;
-import com.example.jwkim.kr.pytorchmobile.Util_Common;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
@@ -57,7 +48,7 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
     final static int PICK_IMAGE_REQUEST = 2000;
     boolean good2Process = false;
     boolean bRescale = false;
-    boolean useNnapi = false;
+    boolean useNnapi = true;
 
     Button btn_choose = null;
     Button btn_process2 = null;
@@ -120,6 +111,17 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
             }
         }
 
+
+        // interpreter 준비
+        tflite = getTfliteInterpreter("my_cnn_epoch10.tflite", useNnapi);
+
+        if (null == nnApiDelegate) {
+            Log.i(getString(R.string.tag), "NNAPI delegate is null...");
+        } else {
+            Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
+        }
+
+
         // Button listen set
         btn_choose.setOnClickListener(this);
         btn_process2.setOnClickListener(this);
@@ -129,7 +131,6 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
 
 
     // 여러개 버튼 처리
-    @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(@NonNull View v) {
         switch (v.getId()) {
@@ -230,7 +231,6 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                 // 시간 측정 시작
                 time_start = System.currentTimeMillis();
 
-                //TensorImage tfImage = new TensorImage(DataType.UINT8);
                 TensorImage tfImage = new TensorImage(DataType.FLOAT32);
 
                 // tfImage.load가 ARGB_8888만 받아들임
@@ -253,32 +253,12 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
 
                 // runModel 시작 (rotate + rescale 이미지)
                 Log.i(getString(R.string.tag), "Start runModel");
-                tflite = getTfliteInterpreter("my_cnn_epoch10.tflite", useNnapi);
-
-                if (null == nnApiDelegate) {
-                    Log.i(getString(R.string.tag), "NNAPI delegate is null...");
-                } else {
-                    Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
-                }
 
                 tflite.run(inputBuffer, outputBuffer);
 
                 // time check
                 time_taken = System.currentTimeMillis() - time_start - time_taken;
                 Log.i(getString(R.string.tag), "Time taken: run model = " + time_taken + " ms");
-
-
-                // Unload delegate
-                // 이걸 어디에 위치시켜야 할 지 고민 필요함
-                // 현재는 back 버튼 눌러서 mainActivity에 간 후, 다시 gallery로 돌아와야만 NNAPI를 초기화 하게끔 되어있음
-                // process 버튼은 일회용임
-                if (useNnapi) {
-                    tflite.close();
-                    if(null != nnApiDelegate) {
-                        nnApiDelegate.close();
-                        Log.i(getString(R.string.tag), "nnApi is closed");
-                    }
-                }
 
                 // output ByteBuffer -> bitmap
                 outputBitmap_tmp = getOutputImage(outputBuffer, w_FHD, h_FHD);
@@ -303,11 +283,11 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
                     util_common.fn_IOexception(e, "Error writing RIA image file", getString(R.string.tag));
                 }
 
-                // 결과 띄우기 (rescale 되었을 수도 있으니 다시 띄우기)
+                // 결과 띄우기
                 imgView_stillshot_processed2.setImageBitmap(util_common.rotate(outputBitmap, exifDegree));
                 imgView_stillshot_org2.setImageBitmap(util_common.rotate(inputBitmap, exifDegree));
 
-                // 결과 영상 띄우기
+                // 결과 영상 출력
                 imgView_stillshot_processed2.setVisibility(View.VISIBLE);
                 imgView_stillshot_org2.setVisibility(View.INVISIBLE);
 
@@ -502,7 +482,6 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
         public ThreadTest() {
             // 초기화
         }
-
         public void run(@NonNull ProgressBar pbar) {
             pbar.setEnabled(true);
         }
@@ -522,8 +501,10 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
 //            System.loadLibrary("tensorflowlite_hexagon_jni");
 //            Interpreter.Options options = new Interpreter.Options();
             nnApiDelegate = new NnApiDelegate();
-            if (useNnApi)
+            if (useNnApi) {
                 options.addDelegate(nnApiDelegate);
+                Log.i(getString(R.string.tag), "nnApi delegate option was added");
+            } else Log.i(getString(R.string.tag), "nnApi delegate option was NOT added");
 //            hexagonDelegate = new HexagonDelegate(this);
 //            options.addDelegate((hexagonDelegate));
             Interpreter interpreter = new Interpreter(loadModelFile(this, modelPath), options);
@@ -548,5 +529,21 @@ public class SubActivity_Gallery extends AppCompatActivity  implements View.OnCl
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+    // back 버튼 - NNAPI delegate 종료
+    @Override
+    public void onBackPressed() {
+        Log.i(getString(R.string.tag), "Back button is pressed");
+        if (useNnapi) {
+            tflite.close();
+            if (null != nnApiDelegate) {
+                nnApiDelegate.close();
+                Log.i(getString(R.string.tag), "nnApi is closed");
+            } else Log.i(getString(R.string.tag), "nnApi delegate was null. Nothing to close");
+        }
+
+        // 현재 activity 종료
+        finish();
     }
 }

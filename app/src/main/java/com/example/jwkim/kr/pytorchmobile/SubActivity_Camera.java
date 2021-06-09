@@ -23,7 +23,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
@@ -118,6 +117,17 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
                         Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
             }
         }
+
+
+        // interpreter 준비
+        tflite = getTfliteInterpreter("my_cnn_epoch10.tflite", useNnapi);
+
+        if (null == nnApiDelegate) {
+            Log.i(getString(R.string.tag), "NNAPI delegate is null...");
+        } else {
+            Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
+        }
+
 
         // Button listen set
         btn_shoot.setOnClickListener(this);
@@ -218,7 +228,6 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
                 // 시간 측정 시작
                 time_start = System.currentTimeMillis();
 
-                //TensorImage tfImage = new TensorImage(DataType.UINT8);
                 TensorImage tfImage = new TensorImage(DataType.FLOAT32);
 
                 // tfImage.load가 ARGB_8888만 받아들임
@@ -241,32 +250,12 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
 
                 // runModel 시작
                 Log.i(getString(R.string.tag), "Start runModel");
-                tflite = getTfliteInterpreter("my_cnn_epoch10.tflite", useNnapi);
-
-                if (null == nnApiDelegate) {
-                    Log.i(getString(R.string.tag), "NNAPI delegate is null...");
-                } else {
-                    Log.i(getString(R.string.tag), "NNAPI delegate prepared...");
-                }
 
                 tflite.run(inputBuffer, outputBuffer);
 
                 // time check
                 time_taken = System.currentTimeMillis() - time_start - time_taken;
                 Log.i(getString(R.string.tag), "Time taken: run model = " + time_taken + " ms");
-
-
-                // Unload delegate
-                // 이걸 어디에 위치시켜야 할 지 고민 필요함
-                // 현재는 back 버튼 눌러서 mainActivity에 간 후, 다시 gallery로 돌아와야만 NNAPI를 초기화 하게끔 되어있음
-                // process 버튼은 일회용임
-                if (useNnapi) {
-                    tflite.close();
-                    if (null != nnApiDelegate) {
-                        nnApiDelegate.close();
-                        Log.i(getString(R.string.tag), "nnApi is closed");
-                    }
-                }
 
                 // output ByteBuffer -> bitmap
                 outputBitmap_tmp = getOutputImage(outputBuffer, w_FHD, h_FHD);
@@ -290,13 +279,11 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
                     util_common.fn_IOexception(e, "Error writing RIA image file", getString(R.string.tag));
                 }
 
-                // 결과 띄우기 (rescale 되었을 수도 있으니 다시 띄우기)
-                //imgView_stillshot_processed.setImageBitmap(util_common.rotate(outputBitmap, exifDegree));
-                //imgView_stillshot_org.setImageBitmap(util_common.rotate(inputBitmap,exifDegree));
+                // 결과 띄우기
                 imgView_stillshot_processed.setImageBitmap(outputBitmap);
                 imgView_stillshot_org.setImageBitmap(inputBitmap);
 
-                // 처리된 영상 출력
+                // 결과 영상 출력
                 imgView_stillshot_processed.setVisibility(View.VISIBLE);
                 imgView_stillshot_org.setVisibility(View.INVISIBLE);
 
@@ -520,14 +507,17 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
 //            System.loadLibrary("tensorflowlite_hexagon_jni");
 //            Interpreter.Options options = new Interpreter.Options();
             nnApiDelegate = new NnApiDelegate();
-            if (useNnApi)
+            if (useNnApi) {
                 options.addDelegate(nnApiDelegate);
+                Log.i(getString(R.string.tag), "nnApi delegate option was added");
+            } else Log.i(getString(R.string.tag), "nnApi delegate option was NOT added");
 //            hexagonDelegate = new HexagonDelegate(this);
 //            options.addDelegate((hexagonDelegate));
             Interpreter interpreter = new Interpreter(loadModelFile(this, modelPath), options);
             return interpreter;
 //            return new Interpreter(loadModelFile(this, modelPath), options);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -571,4 +561,23 @@ public class SubActivity_Camera extends AppCompatActivity implements View.OnClic
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
         return bitmap;
     }
+
+
+    // back 버튼 - NNAPI delegate 종료
+    @Override
+    public void onBackPressed() {
+        Log.i(getString(R.string.tag), "Back button is pressed");
+        if (useNnapi) {
+            tflite.close();
+            if (null != nnApiDelegate) {
+                nnApiDelegate.close();
+                Log.i(getString(R.string.tag), "nnApi is closed");
+            } else Log.i(getString(R.string.tag), "nnApi delegate was null. Nothing to close");
+        }
+
+        // 현재 activity 종료
+        finish();
+    }
+
+
 }

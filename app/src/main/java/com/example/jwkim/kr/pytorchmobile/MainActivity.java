@@ -18,9 +18,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.nnapi.NnApiDelegate;
-
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private long time = 0;
@@ -58,12 +55,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.i(getString(R.string.tag), "Market model name is \"" + Build.MODEL + "\"");
         Log.i(getString(R.string.tag), "Device name is \"" + Build.DEVICE + "\"");
 
-        /*
-        // nnapi delegate 미리 초기화
-        Interpreter tflite = null;
-        Interpreter.Options options = new Interpreter.Options();
-        NnApiDelegate nnApiDelegate = null;
-        */
     }
 
     // 여러개 버튼 처리
