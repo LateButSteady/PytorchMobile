@@ -28,6 +28,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     TextView text_manufacturer = null;
     TextView text_model = null;
 
+    // 왜 subactivity_test에서는 반영이 안되었을까
+    TextView text_cpp;
+
+    public native String helloWorld();  // cpp_code.cpp에 있는 native method 선언
+    // lib load하기
+    static {
+        System.loadLibrary("cpp_code");  // .cpp 파일 이름 (모듈 name)
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +64,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.i(getString(R.string.tag), "Market model name is \"" + Build.MODEL + "\"");
         Log.i(getString(R.string.tag), "Device name is \"" + Build.DEVICE + "\"");
 
+
+        text_cpp = findViewById(R.id.text_cpp);
+        String aaa = helloWorld();
+        text_cpp.setText(aaa);
     }
 
     // 여러개 버튼 처리

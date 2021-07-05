@@ -38,6 +38,9 @@ public class SubActivity_Test extends AppCompatActivity {
     ImageView imgView_stillshot_processed;
     ImageView imgView_stillshot_org;
     //-----
+    //TextView text_cpp;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +49,7 @@ public class SubActivity_Test extends AppCompatActivity {
 
         imgView_stillshot_processed = findViewById(R.id.imgView_stillshot_processed);
         imgView_stillshot_org = findViewById(R.id.imgView_stillshot_org);
+        //text_cpp = findViewById(R.id.text_cpp);
 
         try {
             bitmap = BitmapFactory.decodeStream(getAssets().open("macaw.JPG")); // 대소문자 중요

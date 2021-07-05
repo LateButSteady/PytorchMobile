@@ -8,12 +8,8 @@
 
 extern "C" JNIEXPORT jstring JNICALL
 
-// MainActivity에서 부를것이다.
-//jstring Java_com_example_jwkim_cpp_code_MainActivity_helloWorld(JNIEnv* env, jobject obj){
-Java_com_example_jwkim_cpp_code_MainActivity_helloWorld(JNIEnv* env, jobject /* this */){
-    //return (*env)->NewStringUTF(env, "Hello World MF!!");
+// SubActivity_Test에서 부를것이다.
+Java_com_example_jwkim_kr_pytorchmobile_MainActivity_helloWorld(JNIEnv* env, jobject /* this */){
 
-    //std::string hello = "Hello World MF!!";
     return env->NewStringUTF("Hello World MF!!");
-    //return env->NewStringUTF(hello.c_str());
 }
